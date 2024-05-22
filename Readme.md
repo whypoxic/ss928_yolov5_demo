@@ -34,7 +34,7 @@ csdn
 
 ###  五、其它
 创造不易，谢谢大家支持
-<img src="doc/other/aipashhandemumu.png" alt="alt text" title="谢谢大家" style="max-width:200px;max-height:200px;">
+<img src="doc/other/aipashhandemumu.png" alt="alt text" title="谢谢大家" style="max-width:100px;max-height:100px;">
 
 如果需要项目合作，请添加下面微信
-<img src="doc/other/wx.png" alt="alt text" title="谢谢大家" style="max-width:200px;max-height:200px;">
+<img src="doc/other/wx.png" alt="alt text" title="谢谢大家" style="max-width:100px;max-height:100px;">
