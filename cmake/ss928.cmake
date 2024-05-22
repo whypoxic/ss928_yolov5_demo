@@ -1,0 +1,5 @@
+SET(PLATFORM ss928)
+SET(CMAKE_C_COMPILER   aarch64-mix210-linux-gcc)
+SET(CMAKE_CXX_COMPILER aarch64-mix210-linux-g++)
+SET(CMAKE_STRIP        aarch64-mix210-linux-strip)
+SET(CMAKE_ASM_COMPILER  ${CMAKE_C_COMPILER})
