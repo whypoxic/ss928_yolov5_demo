@@ -19,4 +19,6 @@ td_void sample_svp_npu_acl_resnet50_handle_sig(td_void);
 /* function : show the sample of acl mobilenet_v3 dyanamicbatch with mmz cached */
 td_void sample_svp_npu_acl_mobilenet_v3_dynamicbatch(td_void);
 
+td_void nnn_init(td_void);
+td_s32 nnn_execute(td_void* data_buf, unsigned long data_len);
 #endif

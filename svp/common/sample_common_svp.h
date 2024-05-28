@@ -66,16 +66,20 @@ typedef struct {
     td_u32 chn_num;
 } ot_sample_svp_media_cfg;
 
-#define sample_svp_printf(level_str, msg, ...) \
-do { \
-    fprintf(stderr, "[level]:%s,[func]:%s [line]:%d [info]:"msg, level_str, __FUNCTION__, __LINE__, ##__VA_ARGS__); \
-} while (0)
+#define sample_svp_printf(level_str, msg, ...)  do{}while (0)
 
-#define sample_svp_printf_red(level_str, msg, ...) \
-do { \
-    fprintf(stderr, "\033[0;31m [level]:%s,[func]:%s [line]:%d [info]:"msg"\033[0;39m\n", level_str, __FUNCTION__, \
-        __LINE__, ##__VA_ARGS__); \
-} while (0)
+// #define sample_svp_printf(level_str, msg, ...) \
+// do { \
+//     fprintf(stderr, "[level]:%s,[func]:%s [line]:%d [info]:"msg, level_str, __FUNCTION__, __LINE__, ##__VA_ARGS__); 
+// } while (0)
+
+#define sample_svp_printf_red(level_str, msg, ...)  do{}while (0)
+// #define sample_svp_printf_red(level_str, msg, ...) \
+// do { \
+//     fprintf(stderr, "\033[0;31m [level]:%s,[func]:%s [line]:%d [info]:"msg"\033[0;39m\n", level_str, __FUNCTION__, \
+//         __LINE__, ##__VA_ARGS__); \
+// } while (0)
+
 /* system is unusable   */
 #define sample_svp_trace_fatal(msg, ...)   sample_svp_printf_red("Fatal", msg, ##__VA_ARGS__)
 /* action must be taken immediately */

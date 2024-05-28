@@ -453,3 +453,49 @@ td_void sample_svp_npu_acl_resnet50_handle_sig(td_void)
 {
     sample_svp_npu_acl_resnet50_stop();
 }
+
+/* function : show the sample of npu resnet50 */
+td_void nnn_init(td_void)
+{
+    td_void *data_buf = TD_NULL;
+    size_t buf_size;
+    td_s32 ret;
+
+    // const char *om_model_path = "./data/model/resnet50.om";
+    const char *om_model_path = "yolov5s_v6.2.om";    
+    ret = sample_svp_npu_acl_prepare_init(om_model_path);
+    if (ret != TD_SUCCESS) {
+        return;
+    }
+
+    ret = sample_svp_npu_load_model(om_model_path, 0, TD_FALSE);
+    if (ret != TD_SUCCESS) {
+        goto acl_process_end0;
+    }
+
+   return 0;
+acl_process_end0:
+    sample_svp_npu_acl_prepare_exit(1);
+}
+
+td_s32 nnn_execute(td_void* data_buf, size_t data_len)
+{
+    td_s32 ret;
+    ret = sample_svp_npu_dataset_prepare_init(0);
+
+    ret = sample_svp_npu_create_input_databuf(data_buf, data_len, 0);
+    if (ret != TD_SUCCESS) {
+        sample_svp_trace_err("memcpy_s device buffer fail.\n");
+        return -1;
+    }
+    ret = sample_npu_model_execute(0);
+    if (ret != TD_SUCCESS) {
+        sample_svp_trace_err("execute inference fail.\n");
+        return -1;
+    }
+    sample_npu_output_model_result(0);
+    sample_npu_destroy_input_databuf(0);
+    sample_npu_destroy_output(0);
+    sample_npu_destroy_input_dataset(0);
+    return 0;
+}

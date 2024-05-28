@@ -685,11 +685,11 @@ static void draw_objects(const cv::Mat &bgr,
 
 cv::Mat bgr;
 static std::vector<Object> objects;
-static int img_w;
-static int img_h;
+static int img_w = 640;
+static int img_h = 640;
 static float scale = 1.f;
-static int wpad;
-static int hpad;
+static int wpad = 0;
+static int hpad = 0;
 static std::vector<Object> proposals;
 static ncnn::Mat in_pad;
 
@@ -758,6 +758,9 @@ int ncnn_convertimg_yolov5s(const char *jpg, const char *yuvpath) {
   return 0;
 }
 int ncnn_result(const float *src, unsigned int len) {
+  const float norm_vals[3] = {1 / 255.f, 1 / 255.f, 1 / 255.f};
+  in_pad.substract_mean_normalize(0, norm_vals);
+
   const float prob_threshold = 0.25f;
 
   // stride 8
@@ -770,7 +773,7 @@ int ncnn_result(const float *src, unsigned int len) {
     memcpy(out.data, src, len * sizeof(float));
 
     // out = out.reshape( 85);
-    printf("w = %d,h=%d,d=%d,c=%d\n", out.w, out.h, out.d, out.c);
+    // printf("w = %d,h=%d,d=%d,c=%d\n", out.w, out.h, out.d, out.c);
 
     ncnn::Mat anchors(6);
     anchors[0] = 10.f;
@@ -782,7 +785,7 @@ int ncnn_result(const float *src, unsigned int len) {
 
     std::vector<Object> objects8;
     generate_proposals(anchors, 8, in_pad, out, prob_threshold, objects8);
-    printf("objects8.size():%d\n", objects8.size());
+    // printf("objects8.size():%d\n", objects8.size());
 
     proposals.insert(proposals.end(), objects8.begin(), objects8.end());
 
@@ -791,7 +794,7 @@ int ncnn_result(const float *src, unsigned int len) {
 
   // stride 16
   if (len == 3 * 40 * 40 * 85) {
-    printf("----------------3 * 40 * 40 * 85--------------------\n");
+    // printf("----------------3 * 40 * 40 * 85--------------------\n");
     ncnn::Mat out;
     out.create(85, 40, 40, 3);
     //  out.create(85, 480, 1, 3);
@@ -808,14 +811,14 @@ int ncnn_result(const float *src, unsigned int len) {
 
     std::vector<Object> objects16;
     generate_proposals(anchors, 16, in_pad, out, prob_threshold, objects16);
-    printf("objects16.size():%d\n", objects16.size());
+    // printf("objects16.size():%d\n", objects16.size());
     proposals.insert(proposals.end(), objects16.begin(), objects16.end());
     return 0;
   }
 
   // stride 32
   if (len == 3 * 20 * 20 * 85) {
-    printf("----------------3 * 20 * 20 * 85--------------------\n");
+    // printf("----------------3 * 20 * 20 * 85--------------------\n");
     ncnn::Mat out;
     out.create(85, 20, 20, 3);
     memcpy(out.data, src, len * sizeof(float));
@@ -830,7 +833,7 @@ int ncnn_result(const float *src, unsigned int len) {
 
     std::vector<Object> objects32;
     generate_proposals(anchors, 32, in_pad, out, prob_threshold, objects32);
-    printf("objects32.size():%d\n", objects32.size());
+    // printf("objects32.size():%d\n", objects32.size());
     proposals.insert(proposals.end(), objects32.begin(), objects32.end());
   }
 
@@ -866,9 +869,11 @@ int ncnn_result(const float *src, unsigned int len) {
     objects[i].rect.y = y0;
     objects[i].rect.width = x1 - x0;
     objects[i].rect.height = y1 - y0;
+
+    printf("[%d] (%d,%d,%d,%d)")
   }
 
-  draw_objects(bgr, objects);
+  // draw_objects(bgr, objects);
 
   return 0;
 }

@@ -468,9 +468,9 @@ td_s32 sample_comm_venc_save_stream(FILE *fd, ot_venc_stream *stream)
     td_u32 i;
 
     for (i = 0; i < stream->pack_cnt; i++) {
-        fwrite(stream->pack[i].addr + stream->pack[i].offset, stream->pack[i].len - stream->pack[i].offset, 1, fd);
+        // fwrite(stream->pack[i].addr + stream->pack[i].offset, stream->pack[i].len - stream->pack[i].offset, 1, fd);
 
-        fflush(fd);
+        // fflush(fd);
     }
 
     return TD_SUCCESS;

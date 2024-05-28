@@ -1,10 +1,9 @@
+cmake_minimum_required(VERSION 3.5)
+PROJECT(ss928_yolov5)
+
 include(${CMAKE_SOURCE_DIR}/cmake/ss928.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/cmakebase.cmake)
 include(${CMAKE_SOURCE_DIR}/cmake/project.cmake)
-
-PROJECT(ss928_yolov5)
-
-cmake_minimum_required(VERSION 3.5)
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY  "${CMAKE_SOURCE_DIR}/output/")
 
@@ -34,6 +33,7 @@ aux_source_directory(${CMAKE_SOURCE_DIR}/svp/common/ SVP_SRCLIST)
 aux_source_directory(${CMAKE_SOURCE_DIR}/svp/npu/sample_svp_npu SVP_SRCLIST)
 aux_source_directory(${CMAKE_SOURCE_DIR}/svp/npu/ SVP_SRCLIST)
 aux_source_directory(${CMAKE_SOURCE_DIR}/svp/ SVP_SRCLIST)
+aux_source_directory(${CMAKE_SOURCE_DIR}/sample/ SVP_SRCLIST)
 
 add_executable(${PROJECT_NAME} ${SVP_SRCLIST} ${SOCSDKCOMMON_SRCLIST})
 
@@ -48,6 +48,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/doc/atc/yolov5s_v6.2.om ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/doc/rundemo.sh ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/doc/test.jpg ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/doc/640x640.jpg ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/ss928sdk/lib ${OUTPUT_LIB_DIR}
     COMMENT "Copying lib files to output directory"
 )
