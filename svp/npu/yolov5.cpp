@@ -591,6 +591,7 @@ static void bgr2yuv420sp(const unsigned char *bgrdata, int width, int height,
 
 static void draw_objects(const cv::Mat &bgr,
                          const std::vector<Object> &objects) {
+                          
   static const char *class_names[] = {
       "person",        "bicycle",      "car",
       "motorcycle",    "airplane",     "bus",
@@ -729,8 +730,8 @@ int ncnn_convertimg_yolov5s(const char *jpg, const char *yuvpath) {
   wpad = (w + MAX_STRIDE - 1) / MAX_STRIDE * MAX_STRIDE - w;
   hpad = (h + MAX_STRIDE - 1) / MAX_STRIDE * MAX_STRIDE - h;
 
-  printf("w:%d,h:%d,MAX_STRIDE:%d,wpad:%d,hpad:%d，scale:%f\n", w, h, MAX_STRIDE, wpad,
-         hpad,scale);
+  printf("w:%d,h:%d,MAX_STRIDE:%d,wpad:%d,hpad:%d，scale:%f\n", w, h,
+         MAX_STRIDE, wpad, hpad, scale);
 
   const float norm_vals[3] = {1 / 255.f, 1 / 255.f, 1 / 255.f};
   in_pad.substract_mean_normalize(0, norm_vals);
@@ -762,13 +763,14 @@ int ncnn_result(const float *src, unsigned int len) {
   in_pad.substract_mean_normalize(0, norm_vals);
 
   const float prob_threshold = 0.25f;
+  const int csize = 80;
 
   // stride 8
-  if (len == 3 * 80 * 80 * 85) {
+  if (len == 3 * 80 * 80 * (csize+5)) {
     proposals.clear();
     printf("----------------3 * 80 * 80 * 85--------------------\n");
     ncnn::Mat out;
-    out.create(85, 80, 80, 3);
+    out.create((csize+5), 80, 80, 3);
     // ex.extract("output", out);
     memcpy(out.data, src, len * sizeof(float));
 
@@ -793,10 +795,10 @@ int ncnn_result(const float *src, unsigned int len) {
   }
 
   // stride 16
-  if (len == 3 * 40 * 40 * 85) {
+  if (len == 3 * 40 * 40 * (csize+5)) {
     // printf("----------------3 * 40 * 40 * 85--------------------\n");
     ncnn::Mat out;
-    out.create(85, 40, 40, 3);
+    out.create((csize+5), 40, 40, 3);
     //  out.create(85, 480, 1, 3);
 
     // ex.extract("353", out);
@@ -817,10 +819,10 @@ int ncnn_result(const float *src, unsigned int len) {
   }
 
   // stride 32
-  if (len == 3 * 20 * 20 * 85) {
+  if (len == 3 * 20 * 20 * (csize+5)) {
     // printf("----------------3 * 20 * 20 * 85--------------------\n");
     ncnn::Mat out;
-    out.create(85, 20, 20, 3);
+    out.create((csize+5), 20, 20, 3);
     memcpy(out.data, src, len * sizeof(float));
 
     ncnn::Mat anchors(6);
@@ -869,11 +871,9 @@ int ncnn_result(const float *src, unsigned int len) {
     objects[i].rect.y = y0;
     objects[i].rect.width = x1 - x0;
     objects[i].rect.height = y1 - y0;
-
-    printf("[%d] (%d,%d,%d,%d)")
   }
 
-  // draw_objects(bgr, objects);
+  draw_objects(bgr, objects);
 
   return 0;
 }

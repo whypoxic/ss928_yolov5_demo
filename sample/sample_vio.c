@@ -1728,7 +1728,7 @@ static td_s32 sample_vio_execute_case(td_u32 case_index)
 #ifdef __LITEOS__
 td_s32 app_main(td_s32 argc, td_char *argv[])
 #else
-td_s32 main(td_s32 argc, td_char *argv[])
+td_s32 main1(td_s32 argc, td_char *argv[])
 #endif
 {
     td_s32 ret;

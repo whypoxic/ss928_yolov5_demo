@@ -87,7 +87,7 @@ static td_s32 sample_svp_npu_case(int argc, char *argv[])
 
 #include "wrapperncnn.h"
 
-int main1(int argc, char* argv[])
+int main(int argc, char* argv[])
 {
     remove("image.png");
     struct sigaction sa;
