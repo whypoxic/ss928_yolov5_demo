@@ -1,7 +1,3 @@
-/*
-  Copyright (c), 2001-2022, Shenshu Tech. Co., Ltd.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

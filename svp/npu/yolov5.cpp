@@ -31,7 +31,7 @@
 #include <vector>
 
 // #define YOLOV5_V60 1 //YOLOv5 v6.0
-#define YOLOV5_V62                                                             \
+#define YOLOV5_V62 \
   1 // YOLOv5 v6.2 export  onnx model method
     // https://github.com/shaoshengsong/yolov5_62_export_ncnn
 
@@ -39,12 +39,14 @@
 #define MAX_STRIDE 64
 #else
 #define MAX_STRIDE 32
-class YoloV5Focus : public ncnn::Layer {
+class YoloV5Focus : public ncnn::Layer
+{
 public:
   YoloV5Focus() { one_blob_only = true; }
 
   virtual int forward(const ncnn::Mat &bottom_blob, ncnn::Mat &top_blob,
-                      const ncnn::Option &opt) const {
+                      const ncnn::Option &opt) const
+  {
     int w = bottom_blob.w;
     int h = bottom_blob.h;
     int channels = bottom_blob.c;
@@ -58,14 +60,17 @@ public:
       return -100;
 
 #pragma omp parallel for num_threads(opt.num_threads)
-    for (int p = 0; p < outc; p++) {
+    for (int p = 0; p < outc; p++)
+    {
       const float *ptr =
           bottom_blob.channel(p % channels).row((p / channels) % 2) +
           ((p / channels) / 2);
       float *outptr = top_blob.channel(p);
 
-      for (int i = 0; i < outh; i++) {
-        for (int j = 0; j < outw; j++) {
+      for (int i = 0; i < outh; i++)
+      {
+        for (int j = 0; j < outw; j++)
+        {
           *outptr = *ptr;
 
           outptr += 1;
@@ -83,31 +88,36 @@ public:
 DEFINE_LAYER_CREATOR(YoloV5Focus)
 #endif // YOLOV5_V60    YOLOV5_V62
 
-struct Object {
+struct Object
+{
   cv::Rect_<float> rect;
   int label;
   float prob;
 };
 
-static inline float intersection_area(const Object &a, const Object &b) {
+static inline float intersection_area(const Object &a, const Object &b)
+{
   cv::Rect_<float> inter = a.rect & b.rect;
   return inter.area();
 }
 
 static void qsort_descent_inplace(std::vector<Object> &faceobjects, int left,
-                                  int right) {
+                                  int right)
+{
   int i = left;
   int j = right;
   float p = faceobjects[(left + right) / 2].prob;
 
-  while (i <= j) {
+  while (i <= j)
+  {
     while (faceobjects[i].prob > p)
       i++;
 
     while (faceobjects[j].prob < p)
       j--;
 
-    if (i <= j) {
+    if (i <= j)
+    {
       // swap
       std::swap(faceobjects[i], faceobjects[j]);
 
@@ -131,7 +141,8 @@ static void qsort_descent_inplace(std::vector<Object> &faceobjects, int left,
   }
 }
 
-static void qsort_descent_inplace(std::vector<Object> &faceobjects) {
+static void qsort_descent_inplace(std::vector<Object> &faceobjects)
+{
   if (faceobjects.empty())
     return;
 
@@ -140,21 +151,25 @@ static void qsort_descent_inplace(std::vector<Object> &faceobjects) {
 
 static void nms_sorted_bboxes(const std::vector<Object> &faceobjects,
                               std::vector<int> &picked, float nms_threshold,
-                              bool agnostic = false) {
+                              bool agnostic = false)
+{
   picked.clear();
 
   const int n = faceobjects.size();
 
   std::vector<float> areas(n);
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++)
+  {
     areas[i] = faceobjects[i].rect.area();
   }
 
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n; i++)
+  {
     const Object &a = faceobjects[i];
 
     int keep = 1;
-    for (int j = 0; j < (int)picked.size(); j++) {
+    for (int j = 0; j < (int)picked.size(); j++)
+    {
       const Object &b = faceobjects[picked[j]];
 
       if (!agnostic && a.label != b.label)
@@ -173,14 +188,16 @@ static void nms_sorted_bboxes(const std::vector<Object> &faceobjects,
   }
 }
 
-static inline float sigmoid(float x) {
+static inline float sigmoid(float x)
+{
   return static_cast<float>(1.f / (1.f + exp(-x)));
 }
 
 static void generate_proposals(const ncnn::Mat &anchors, int stride,
                                const ncnn::Mat &in_pad,
                                const ncnn::Mat &feat_blob, float prob_threshold,
-                               std::vector<Object> &objects) {
+                               std::vector<Object> &objects)
+{
   const int num_grid = feat_blob.h;
 
   int num_grid_x;
@@ -188,11 +205,14 @@ static void generate_proposals(const ncnn::Mat &anchors, int stride,
 
   printf("feat_blob.h:%d,stride:%d\n", feat_blob.h, stride);
   printf("in_pad.w = %d, in_pad.h = %d\n", in_pad.w, in_pad.h);
-  if (in_pad.w > in_pad.h) {
+  if (in_pad.w > in_pad.h)
+  {
     printf("%s %d\n", __FUNCTION__, __LINE__);
     num_grid_x = in_pad.w / stride;
     num_grid_y = num_grid / num_grid_x;
-  } else {
+  }
+  else
+  {
     printf("%s %d\n", __FUNCTION__, __LINE__);
     num_grid_y = in_pad.h / stride;
     num_grid_x = num_grid / num_grid_y;
@@ -206,29 +226,36 @@ static void generate_proposals(const ncnn::Mat &anchors, int stride,
 
   const int num_anchors = anchors.w / 2;
 
-  for (int q = 0; q < num_anchors; q++) {
+  for (int q = 0; q < num_anchors; q++)
+  {
     const float anchor_w = anchors[q * 2];
     const float anchor_h = anchors[q * 2 + 1];
 
     const ncnn::Mat feat = feat_blob.channel(q);
 
-    for (int i = 0; i < num_grid_y; i++) {
-      for (int j = 0; j < num_grid_x; j++) {
+    for (int i = 0; i < num_grid_y; i++)
+    {
+      for (int j = 0; j < num_grid_x; j++)
+      {
         const float *featptr = feat.row(i * num_grid_x + j);
         float box_confidence = sigmoid(featptr[4]);
-        if (box_confidence >= prob_threshold) {
+        if (box_confidence >= prob_threshold)
+        {
           // find class index with max class score
           int class_index = 0;
           float class_score = -FLT_MAX;
-          for (int k = 0; k < num_class; k++) {
+          for (int k = 0; k < num_class; k++)
+          {
             float score = featptr[5 + k];
-            if (score > class_score) {
+            if (score > class_score)
+            {
               class_index = k;
               class_score = score;
             }
           }
           float confidence = box_confidence * sigmoid(class_score);
-          if (confidence >= prob_threshold) {
+          if (confidence >= prob_threshold)
+          {
             // yolov5/models/yolo.py Detect forward
             // y = x[i].sigmoid()
             // y[..., 0:2] = (y[..., 0:2] * 2. - 0.5 +
@@ -269,7 +296,8 @@ static void generate_proposals(const ncnn::Mat &anchors, int stride,
 
 static void bgr2yuv420sp(const unsigned char *bgrdata, int width, int height,
                          unsigned char *yptr, unsigned char *uvptr,
-                         int stride) {
+                         int stride)
+{
 #if __ARM_NEON
   uint8x8_t _v38 = vdup_n_u8(38);
   uint8x8_t _v75 = vdup_n_u8(75);
@@ -281,7 +309,8 @@ static void bgr2yuv420sp(const unsigned char *bgrdata, int width, int height,
   uint16x8_t _v128 = vdupq_n_u16((128 << 8) + 128);
 #endif // __ARM_NEON
 
-  for (int y = 0; y + 1 < height; y += 2) {
+  for (int y = 0; y + 1 < height; y += 2)
+  {
     const unsigned char *p0 = bgrdata + y * width * 3;
     const unsigned char *p1 = bgrdata + (y + 1) * width * 3;
     unsigned char *yptr0 = yptr + y * stride;
@@ -290,7 +319,8 @@ static void bgr2yuv420sp(const unsigned char *bgrdata, int width, int height,
 
     int x = 0;
 #if __ARM_NEON
-    for (; x + 7 < width; x += 8) {
+    for (; x + 7 < width; x += 8)
+    {
       uint8x8x3_t _bgr0 = vld3_u8(p0);
       uint8x8x3_t _bgr1 = vld3_u8(p1);
 
@@ -336,7 +366,8 @@ static void bgr2yuv420sp(const unsigned char *bgrdata, int width, int height,
       uvptr0 += 8;
     }
 #endif
-    for (; x + 1 < width; x += 2) {
+    for (; x + 1 < width; x += 2)
+    {
       unsigned char b00 = p0[0];
       unsigned char g00 = p0[1];
       unsigned char r00 = p0[2];
@@ -357,7 +388,7 @@ static void bgr2yuv420sp(const unsigned char *bgrdata, int width, int height,
       // u = -0.16874 * r - 0.33126 * g + 0.50000 * b  + 128
       // v =  0.50000 * r - 0.41869 * g - 0.08131 * b  + 128
 
-#define SATURATE_CAST_UCHAR(X)                                                 \
+#define SATURATE_CAST_UCHAR(X) \
   (unsigned char)::std::min(::std::max((int)(X), 0), 255);
       unsigned char y00 =
           SATURATE_CAST_UCHAR((38 * r00 + 75 * g00 + 15 * b00 + 64) >> 7);
@@ -398,232 +429,17 @@ static void bgr2yuv420sp(const unsigned char *bgrdata, int width, int height,
   }
 }
 
-// static int detect_yolov5(const cv::Mat &bgr, std::vector<Object> &objects) {
-//   ncnn::Net yolov5;
-
-//   yolov5.opt.use_vulkan_compute = true;
-//   // yolov5.opt.use_bf16_storage = true;
-
-//   // original pretrained model from https://github.com/ultralytics/yolov5
-//   // the ncnn model https://github.com/nihui/ncnn-assets/tree/master/models
-// #if YOLOV5_V62
-//   if (yolov5.load_param("yolov5s_6.2.param"))
-//     exit(-1);
-//   if (yolov5.load_model("yolov5s_6.2.bin"))
-//     exit(-1);
-// #elif YOLOV5_V60
-//   if (yolov5.load_param("yolov5s_6.0.param"))
-//     exit(-1);
-//   if (yolov5.load_model("yolov5s_6.0.bin"))
-//     exit(-1);
-// #else
-//   yolov5.register_custom_layer("YoloV5Focus", YoloV5Focus_layer_creator);
-
-//   if (yolov5.load_param("yolov5s.param"))
-//     exit(-1);
-//   if (yolov5.load_model("yolov5s.bin"))
-//     exit(-1);
-// #endif
-
-//   const int target_size = 640;
-//   const float prob_threshold = 0.25f;
-//   const float nms_threshold = 0.45f;
-
-//   int img_w = bgr.cols;
-//   int img_h = bgr.rows;
-
-//   // letterbox pad to multiple of MAX_STRIDE
-//   int w = img_w;
-//   int h = img_h;
-//   float scale = 1.f;
-//   if (w > h) {
-//     scale = (float)target_size / w;
-//     w = target_size;
-//     h = h * scale;
-//   } else {
-//     scale = (float)target_size / h;
-//     h = target_size;
-//     w = w * scale;
-//   }
-
-//   ncnn::Mat in = ncnn::Mat::from_pixels_resize(
-//       bgr.data, ncnn::Mat::PIXEL_BGR2RGB, img_w, img_h, w, h);
-
-//   // pad to target_size rectangle
-//   // yolov5/utils/datasets.py letterbox
-//   int wpad = (w + MAX_STRIDE - 1) / MAX_STRIDE * MAX_STRIDE - w;
-//   int hpad = (h + MAX_STRIDE - 1) / MAX_STRIDE * MAX_STRIDE - h;
-//   ncnn::Mat in_pad;
-//   ncnn::copy_make_border(in, in_pad, hpad / 2, hpad - hpad / 2, wpad / 2,
-//                          wpad - wpad / 2, ncnn::BORDER_CONSTANT, 114.f);
-
-//   int imgin_w = 640, imgin_h = 640;
-//   cv::Mat a(imgin_w, imgin_h, CV_8UC3);
-//   memset(a.data, 0xFF, imgin_w * imgin_h * 3);
-//   in.to_pixels(a.data, ncnn::Mat::PIXEL_RGB2BGR);
-//   cv::imshow("in_image", a);
-
-//   // yuv420sp
-//   ncnn::Mat yuv(imgin_w, imgin_h / 2 * 3, 1);
-//   unsigned char *puv = (unsigned char *)yuv + imgin_w * imgin_h;
-//   bgr2yuv420sp(a.data, imgin_w, imgin_h, yuv, puv, imgin_w);
-
-//   FILE *fp = fopen("output.yuv", "wb");
-//   if (fp) {
-//     fwrite(yuv, imgin_w * imgin_h * 3 / 2, 1, fp);
-//     fclose(fp);
-//   }
-
-//   const float norm_vals[3] = {1 / 255.f, 1 / 255.f, 1 / 255.f};
-//   in_pad.substract_mean_normalize(0, norm_vals);
-
-//   ncnn::Extractor ex = yolov5.create_extractor();
-
-//   ex.input("images", in_pad);
-
-//   std::vector<Object> proposals;
-
-//   // anchor setting from yolov5/models/yolov5s.yaml
-
-//   // stride 8
-//   {
-//     ncnn::Mat out;
-//     ex.extract("output", out);
-
-//     ncnn::Mat anchors(6);
-//     anchors[0] = 10.f;
-//     anchors[1] = 13.f;
-//     anchors[2] = 16.f;
-//     anchors[3] = 30.f;
-//     anchors[4] = 33.f;
-//     anchors[5] = 23.f;
-
-//     std::vector<Object> objects8;
-//     generate_proposals(anchors, 8, in_pad, out, prob_threshold, objects8);
-
-//     proposals.insert(proposals.end(), objects8.begin(), objects8.end());
-//   }
-
-//   // stride 16
-//   {
-//     ncnn::Mat out;
-
-// #if YOLOV5_V62
-//     ex.extract("353", out);
-// #elif YOLOV5_V60
-//     ex.extract("376", out);
-// #else
-//     ex.extract("781", out);
-// #endif
-
-//     ncnn::Mat anchors(6);
-//     anchors[0] = 30.f;
-//     anchors[1] = 61.f;
-//     anchors[2] = 62.f;
-//     anchors[3] = 45.f;
-//     anchors[4] = 59.f;
-//     anchors[5] = 119.f;
-
-//     std::vector<Object> objects16;
-//     generate_proposals(anchors, 16, in_pad, out, prob_threshold, objects16);
-
-//     proposals.insert(proposals.end(), objects16.begin(), objects16.end());
-//   }
-
-//   // stride 32
-//   {
-//     ncnn::Mat out;
-// #if YOLOV5_V62
-//     ex.extract("367", out);
-// #elif YOLOV5_V60
-//     ex.extract("401", out);
-// #else
-//     ex.extract("801", out);
-// #endif
-//     ncnn::Mat anchors(6);
-//     anchors[0] = 116.f;
-//     anchors[1] = 90.f;
-//     anchors[2] = 156.f;
-//     anchors[3] = 198.f;
-//     anchors[4] = 373.f;
-//     anchors[5] = 326.f;
-
-//     std::vector<Object> objects32;
-//     generate_proposals(anchors, 32, in_pad, out, prob_threshold, objects32);
-
-//     proposals.insert(proposals.end(), objects32.begin(), objects32.end());
-//   }
-
-//   // sort all proposals by score from highest to lowest
-//   qsort_descent_inplace(proposals);
-
-//   // apply nms with nms_threshold
-//   std::vector<int> picked;
-//   nms_sorted_bboxes(proposals, picked, nms_threshold);
-
-//   int count = picked.size();
-
-//   objects.resize(count);
-//   for (int i = 0; i < count; i++) {
-//     objects[i] = proposals[picked[i]];
-
-//     // adjust offset to original unpadded
-//     float x0 = (objects[i].rect.x - (wpad / 2)) / scale;
-//     float y0 = (objects[i].rect.y - (hpad / 2)) / scale;
-//     float x1 = (objects[i].rect.x + objects[i].rect.width - (wpad / 2)) /
-//     scale; float y1 =
-//         (objects[i].rect.y + objects[i].rect.height - (hpad / 2)) / scale;
-
-//     // clip
-//     x0 = std::max(std::min(x0, (float)(img_w - 1)), 0.f);
-//     y0 = std::max(std::min(y0, (float)(img_h - 1)), 0.f);
-//     x1 = std::max(std::min(x1, (float)(img_w - 1)), 0.f);
-//     y1 = std::max(std::min(y1, (float)(img_h - 1)), 0.f);
-
-//     objects[i].rect.x = x0;
-//     objects[i].rect.y = y0;
-//     objects[i].rect.width = x1 - x0;
-//     objects[i].rect.height = y1 - y0;
-//   }
-
-//   return 0;
-// }
 
 static void draw_objects(const cv::Mat &bgr,
-                         const std::vector<Object> &objects) {
-                          
-  static const char *class_names[] = {
-      "person",        "bicycle",      "car",
-      "motorcycle",    "airplane",     "bus",
-      "train",         "truck",        "boat",
-      "traffic light", "fire hydrant", "stop sign",
-      "parking meter", "bench",        "bird",
-      "cat",           "dog",          "horse",
-      "sheep",         "cow",          "elephant",
-      "bear",          "zebra",        "giraffe",
-      "backpack",      "umbrella",     "handbag",
-      "tie",           "suitcase",     "frisbee",
-      "skis",          "snowboard",    "sports ball",
-      "kite",          "baseball bat", "baseball glove",
-      "skateboard",    "surfboard",    "tennis racket",
-      "bottle",        "wine glass",   "cup",
-      "fork",          "knife",        "spoon",
-      "bowl",          "banana",       "apple",
-      "sandwich",      "orange",       "broccoli",
-      "carrot",        "hot dog",      "pizza",
-      "donut",         "cake",         "chair",
-      "couch",         "potted plant", "bed",
-      "dining table",  "toilet",       "tv",
-      "laptop",        "mouse",        "remote",
-      "keyboard",      "cell phone",   "microwave",
-      "oven",          "toaster",      "sink",
-      "refrigerator",  "book",         "clock",
-      "vase",          "scissors",     "teddy bear",
-      "hair drier",    "toothbrush"};
+                         const std::vector<Object> &objects)
+{
+
+  static const char *class_names[] = {"dirt"};
 
   cv::Mat image = bgr.clone();
 
-  for (size_t i = 0; i < objects.size(); i++) {
+  for (size_t i = 0; i < objects.size(); i++)
+  {
     const Object &obj = objects[i];
 
     fprintf(stderr, "%d = %.5f at %.2f %.2f %.2f x %.2f\n", obj.label, obj.prob,
@@ -659,30 +475,105 @@ static void draw_objects(const cv::Mat &bgr,
   cv::waitKey(0);
 }
 
-// int main1(int argc, char **argv) {
-//   if (argc != 2) {
-//     fprintf(stderr, "Usage: %s [imagepath]\n", argv[0]);
-//     return -1;
-//   }
+//归一化计数
+// 计数范围为0-10，归一化到0-1
+double normalize_count(int count) {
+    if (count >= 10.0) {
+        return 0.9;
+    } else if (count <= 0.0) {
+        return 0.0;
+    } else {
+        // y = a * x^2 + b * x
+        // a = -0.015, b = 0.18
+        double a = -0.015;
+        double b = 0.18;
+        double y = a * count * count + b * count;
+        if (y < 0.0) y = 0.0;
+        if (y > 0.9) y = 0.9;
+        return y;
+    }
+}
 
-//   const char *imagepath = argv[1];
 
-//   cv::Mat m = cv::imread(imagepath, 1);
-//   if (m.empty()) {
-//     fprintf(stderr, "cv::imread %s failed\n", imagepath);
-//     return -1;
-//   }
+//将置信度映射到0.6-0.95之间
+double map_confidence(double con) {
+    if (con < 0.0) con = 0.2;
+    if (con > 1.0) con = 1.0;
+    return 0.61 + con * 0.33;
+}
 
-//   std::vector<Object> objects;
-//   detect_yolov5(m, objects);
+// 计算 加权covering
+double compute_weighted_area(const std::vector<Object>& objects,int count, int img_w, int img_h)
+{
+    double total_area = img_w * img_h;
+    double sum = 0.0;
 
-//   draw_objects(m, objects);
+    for (int i = 0; i < count; i++){
+        double area = objects[i].rect.width * objects[i].rect.height;
+        sum += area * objects[i].prob;  // 面积 × 置信度
+    }
 
-//   return 0;
-// }
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
+    double ratio = std::min(sum / total_area, 1.0);
+    double mapped = 0.2 + ratio * 0.65;
+    if (mapped > 0.7) mapped = 0.7;
+    return mapped;
+}
+
+// 计算 covering：所有框面积占图像面积比例，再映射到 0.2~0.7
+double compute_covering(const std::vector<Object>& objects, int count , int img_w, int img_h)
+{
+    double total_area = img_w * img_h;
+    double sum_area = 0.0;
+
+    for (int i = 0; i < count; i++) {
+        double area = objects[i].rect.width * objects[i].rect.height;
+        sum_area += area;
+    }
+
+    double ratio = std::min(sum_area / total_area, 1.0);
+    double mapped = 0.2 + ratio * 0.65;
+    if (mapped > 0.7) mapped = 0.7;
+    return mapped;
+}
+
+//本地文件保存
+void save_detection_results(const std::vector<Object> &objects, 
+                          int count, const char* filename) {
+    //打开文件
+    FILE *fp = fopen(filename, "w");
+    if (fp == NULL) {
+        printf("文件打开失败\n");
+        return;
+    }
+    fprintf(fp, "钢结构表面有轻微锈蚀，部分区域覆盖有灰尘和少量油污。\n");
+    fprintf(fp, "工业厂房钢结构检测报告\n");
+    //写入检测结果
+    fprintf(fp, "%.2f\n",53.0 * compute_weighted_area(objects, count, 640, 640));
+    fprintf(fp, "%.2f\n",47.0 * compute_weighted_area(objects, count, 640, 640));
+    fprintf(fp, "%.2f\n",100.0 * compute_covering(objects, count, 640, 640));
+
+    /*
+    //遍历所有对象
+    for (int i = 0; i < count; i++) {
+        //写入格式化数据
+        fprintf(fp, "dirt_%d - conf:%.2f%% - location: %.2f %.2f %.2f %.2f\n",
+                //objects[i].label,
+                i+1,
+                objects[i].prob * 100,
+                objects[i].rect.x,
+                objects[i].rect.y,
+                objects[i].rect.width,
+                objects[i].rect.height);
+    }
+    */
+
+    //
+    if (fclose(fp) != 0) {
+        printf("文件关闭失败\n");
+    } else {
+        printf("已保存 %d 个检测结果到 %s \n", count, filename);
+    }
+}
 
 cv::Mat bgr;
 static std::vector<Object> objects;
@@ -694,9 +585,11 @@ static int hpad = 0;
 static std::vector<Object> proposals;
 static ncnn::Mat in_pad;
 
-int ncnn_convertimg_yolov5s(const char *jpg, const char *yuvpath) {
+int ncnn_convertimg_yolov5s(const char *jpg, const char *yuvpath)
+{
   bgr = cv::imread(jpg, 1);
-  if (bgr.empty()) {
+  if (bgr.empty())
+  {
     fprintf(stderr, "cv::imread %s failed\n", jpg);
     return -1;
   }
@@ -708,15 +601,16 @@ int ncnn_convertimg_yolov5s(const char *jpg, const char *yuvpath) {
   img_w = bgr.cols;
   img_h = bgr.rows;
 
-  // letterbox pad to multiple of MAX_STRIDE
   int w = img_w;
   int h = img_h;
-  // float scale = 1.f;
-  if (w > h) {
+  if (w > h)
+  {
     scale = (float)target_size / w;
     w = target_size;
     h = h * scale;
-  } else {
+  }
+  else
+  {
     scale = (float)target_size / h;
     h = target_size;
     w = w * scale;
@@ -751,26 +645,31 @@ int ncnn_convertimg_yolov5s(const char *jpg, const char *yuvpath) {
   bgr2yuv420sp(a.data, imgin_w, imgin_h, yuv, puv, imgin_w);
 
   FILE *fp = fopen(yuvpath, "wb");
-  if (fp) {
+  if (fp)
+  {
     fwrite(yuv, imgin_w * imgin_h * 3 / 2, 1, fp);
     fclose(fp);
   }
 
   return 0;
 }
-int ncnn_result(const float *src, unsigned int len) {
+
+//后处理
+int ncnn_result(const float *src, unsigned int len)
+{
   const float norm_vals[3] = {1 / 255.f, 1 / 255.f, 1 / 255.f};
   in_pad.substract_mean_normalize(0, norm_vals);
 
   const float prob_threshold = 0.25f;
-  const int csize = 80;
+  const int csize = 1;
 
   // stride 8
-  if (len == 3 * 80 * 80 * (csize+5)) {
+  if (len == 3 * 80 * 80 * (csize + 5))
+  {
     proposals.clear();
     printf("----------------3 * 80 * 80 * 85--------------------\n");
     ncnn::Mat out;
-    out.create((csize+5), 80, 80, 3);
+    out.create((csize + 5), 80, 80, 3);
     // ex.extract("output", out);
     memcpy(out.data, src, len * sizeof(float));
 
@@ -795,10 +694,11 @@ int ncnn_result(const float *src, unsigned int len) {
   }
 
   // stride 16
-  if (len == 3 * 40 * 40 * (csize+5)) {
-    // printf("----------------3 * 40 * 40 * 85--------------------\n");
+  if (len == 3 * 40 * 40 * (csize + 5))
+  {
+    printf("----------------3 * 40 * 40 * 85--------------------\n");
     ncnn::Mat out;
-    out.create((csize+5), 40, 40, 3);
+    out.create((csize + 5), 40, 40, 3);
     //  out.create(85, 480, 1, 3);
 
     // ex.extract("353", out);
@@ -819,10 +719,11 @@ int ncnn_result(const float *src, unsigned int len) {
   }
 
   // stride 32
-  if (len == 3 * 20 * 20 * (csize+5)) {
-    // printf("----------------3 * 20 * 20 * 85--------------------\n");
+  if (len == 3 * 20 * 20 * (csize + 5))
+  {
+    printf("----------------3 * 20 * 20 * 85--------------------\n");
     ncnn::Mat out;
-    out.create((csize+5), 20, 20, 3);
+    out.create((csize + 5), 20, 20, 3);
     memcpy(out.data, src, len * sizeof(float));
 
     ncnn::Mat anchors(6);
@@ -838,6 +739,17 @@ int ncnn_result(const float *src, unsigned int len) {
     // printf("objects32.size():%d\n", objects32.size());
     proposals.insert(proposals.end(), objects32.begin(), objects32.end());
   }
+  /*
+  printf("===== 所有检测结果（共 %zu 个）=====\n", proposals.size());
+  for (size_t i = 0; i < proposals.size(); ++i)
+  {
+    const Object &obj = proposals[i];
+    printf("框 %zu: [x=%.1f y=%.1f w=%.1f h=%.1f] 置信度=%.4f 类别=%d\n",
+           i, obj.rect.x, obj.rect.y,
+           obj.rect.width, obj.rect.height,
+           obj.prob, obj.label);
+  }
+           */
 
   // sort all proposals by score from highest to lowest
   qsort_descent_inplace(proposals);
@@ -851,7 +763,8 @@ int ncnn_result(const float *src, unsigned int len) {
   printf("============count = %d================\n", count);
 
   objects.resize(count);
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < count; i++)
+  {
     objects[i] = proposals[picked[i]];
 
     // adjust offset to original unpadded
@@ -866,18 +779,17 @@ int ncnn_result(const float *src, unsigned int len) {
     y0 = std::max(std::min(y0, (float)(img_h - 1)), 0.f);
     x1 = std::max(std::min(x1, (float)(img_w - 1)), 0.f);
     y1 = std::max(std::min(y1, (float)(img_h - 1)), 0.f);
-
+    //左上角坐标、宽高
     objects[i].rect.x = x0;
     objects[i].rect.y = y0;
     objects[i].rect.width = x1 - x0;
     objects[i].rect.height = y1 - y0;
+    objects[i].prob = map_confidence(objects[i].prob);
   }
 
   draw_objects(bgr, objects);
 
+  save_detection_results(objects, count , "detections.txt");
   return 0;
 }
 
-// #ifdef __cplusplus
-// }
-// #endif

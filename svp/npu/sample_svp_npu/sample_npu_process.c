@@ -402,7 +402,7 @@ td_void sample_svp_npu_acl_resnet50(td_void)
     td_s32 ret;
 
     // const char *om_model_path = "./data/model/resnet50.om";
-    const char *om_model_path = "yolov5s_v6.2.om";    
+    const char *om_model_path = "yolov5.om";    
     ret = sample_svp_npu_acl_prepare_init(om_model_path);
     if (ret != TD_SUCCESS) {
         return;
